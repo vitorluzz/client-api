@@ -21,6 +21,11 @@ print('''
 print
 print("Iniciando o processo de extração de dados do github...")
 
+os.makedirs("data/raw", exist_ok=True)
+os.makedirs("data/curated", exist_ok=True)
+os.makedirs("data/analytics", exist_ok=True)
+os.makedirs("logs", exist_ok=True)
+
 log_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 LOG_FILE = f"logs/github_repos_{log_timestamp}.log"
 os.makedirs("logs", exist_ok=True)
