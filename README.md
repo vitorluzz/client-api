@@ -1,14 +1,14 @@
 # Simple Client API
 
 ```
-            
+
              ██████╗██╗     ██╗███████╗███╗   ██╗████████╗    █████╗ ██████╗ ██╗
             ██╔════╝██║     ██║██╔════╝████╗  ██║╚══██╔══╝   ██╔══██╗██╔══██╗██║
             ██║     ██║     ██║█████╗  ██╔██╗ ██║   ██║█████╗███████║██████╔╝██║
             ██║     ██║     ██║██╔══╝  ██║╚██╗██║   ██║╚════╝██╔══██║██╔═══╝ ██║
             ╚██████╗███████╗██║███████╗██║ ╚████║   ██║      ██║  ██║██║     ██║
              ╚═════╝╚══════╝╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝      ╚═╝  ╚═╝╚═╝     ╚═╝
-                                                                                
+
 
 ```
 
@@ -46,23 +46,14 @@ cd seu-projeto
 
 **2** - Criação do ambiente virtual python:
 
-**2.1** Crie a venv do projeto:
-
 ```bash
-python -m venv .venv
+python -m venv .venv && . .venv/bin/activate && python -m pip install --upgrade pip
 ```
 
 Ou
 
-
 ```bash
-python3 -m venv .venv
-```
-
-**2.2** E então ative o ambiente venv:
-
-```bash
-source .venv/bin/activate
+python3 -m venv .venv && . .venv/bin/activate && python -m pip install --upgrade pip
 ```
 
 ---
