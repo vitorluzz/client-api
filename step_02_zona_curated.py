@@ -1,89 +1,102 @@
-# // salvar o arquivo na curated como parquet respeitando os tipos de daos
-# // tipo datas, tirar o nome microsoft do fullname etc
-
-# // trocar o nome do campo de fullname para organization e colocar o texto em letras maiusculas
-# // id int,full_name string,name string,language string,created_at datetime,updated_at datetime
 print("===============================================")
 print("Step 02 - Zona Curated")
+print("Iniciando o processo de transformação dos dados...")
 print("Importando e iniciando a sessão spark...")
+
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
- 
+from pyspark.sql import Window
+import os
+import time
+import shutil
+import glob
+
+start_time = time.time()
+
 print("Criando a sessão spark...")
 spark = SparkSession.builder \
     .appName("Zona Curated") \
     .master("local[*]") \
     .getOrCreate()
- 
-print("Importando o arquivo zona_raw.csv...")
-df_raw=spark.read.format("com.databricks.spark.csv") \
-.option("header", "true") \
-.option("delimiter", ",") \
-.option("inferSchema", "true") \
-.load("raw/microsoft_repos.csv")
+
+print("Importando o arquivo report_1.parquet...")
+df_raw = spark.read.format("parquet").load("data/raw/report_1.parquet")
 
 df_raw.printSchema()
-
-print("Exibindo os dados...")
 df_raw.show()
 
-"""
-FORMA ERRADA: (MAL OTIMIZADA!!!!)
-Não existe forma certa ou errada, mas sim formas mais otimizadas e menos otimizadas de se fazer a mesma coisa.
-Aqui, estamos fazendo um tratamento de dados de forma sequencial, ou seja, um após o outro.
-Isso é ruim, pois o spark irá executar cada comando de forma sequencial, ou seja, um após o outro.
-Sem contar que a abertura de diversos dataframes intermediários é ruim para a performance do spark.
-Vamos supor que a base de dados seja de 5gb, o spark terá que abrir 5gb para cada dataframe intermediário, 
-só no contexto abaixo, teríamos 3 dataframes intermediários, ou seja, 15gb de dados abertos.
-O correto seria fazer tudo em um único comando, para que o spark possa otimizar a execução dos comandos.
-
-
 print("Começando o tratamento de dados...")
 
-print("tratando os dados dentro da coluna full_name, truncando depois da barra...")
-df2 = df.withColumn("full_name", split(df["full_name"], "/")[0]) 
-
-print("Renomeando a coluna full_name para organization...")
-df3 = df2.withColumnRenamed("full_name", "organization");
-
-print("Deixando todo conteúdo da coluna organization em caixa alta...")
-df4 = df3.withColumn("organization", upper(df3["organization"]))
-
-print("Exibindo os dados tratados...")
-df4.show()
-print("Exibindo o squema tratado...")
-df4.printSchema()
-
-"""
-
-print("Começando o tratamento de dados...")
-print("tratando os dados dentro da coluna full_name, truncando depois da barra...")
-print("Renomeando a coluna full_name para organization...")
-print("Deixando todo conteúdo da coluna organization em caixa alta...")
 df_curated = df_raw.select(
     F.col("id").cast(T.IntegerType()),
     F.upper(F.split(F.col("full_name"), "/")[0]).alias("organization"),
     F.col("name").cast(T.StringType()),
     F.col("language").cast(T.StringType()),
     F.col("created_at").cast(T.TimestampType()),
-    F.col("updated_at").cast(T.TimestampType())
+    F.col("updated_at").cast(T.TimestampType()),
+    F.col("size").cast(T.IntegerType()),
+    F.col("stargazers_count").cast(T.IntegerType()),
+    F.col("watchers_count").cast(T.IntegerType()),
+    F.col("forks_count").cast(T.IntegerType()),
+    F.col("open_issues_count").cast(T.IntegerType()),
+    F.col("archived").cast(T.BooleanType()),
+    F.col("disabled").cast(T.BooleanType()),
+    F.col("visibility").cast(T.StringType())
 )
-print("Tratamento de dados foi um sucesso!")
+
+# Adiciona contagem por linguagem
+window_spec = Window.partitionBy("language")
+df_curated = df_curated.withColumn("language_count", F.count("language").over(window_spec).cast(T.IntegerType()))
+
+# Adiciona timestamp de processamento
+df_curated = df_curated.withColumn("processed_at", F.current_date())
+
+# Reorganiza colunas com language_count ao lado de language
+ordered_columns = [
+    "id", "organization", "name", "language", "language_count", "created_at", "updated_at",
+    "size", "stargazers_count", "watchers_count", "forks_count", "open_issues_count",
+    "archived", "disabled", "visibility", "processed_at"
+]
+df_curated = df_curated.select(*ordered_columns)
 
 print("Exibindo os dados tratados...")
 df_curated.show(truncate=False)
-print("Exibindo o squema tratado...")
 df_curated.printSchema()
 
-print("Salvando os dados tratados na zona curated...")
-print("OBS: se já existir um arquivo parquet com o mesmo nome, ele será sobrescrito! (OVERWRITE)")
-df_curated.write.mode("overwrite").parquet("data/curated/microsoft_repos")
-print("Dados salvos com sucesso!")
+# Diretórios
+output_path = "data/curated"
+final_file_path = os.path.join(output_path, "report_2.parquet")
+temp_path = os.path.join(output_path, "_temp")
 
+# Se já existe arquivo final, lê e une
+if os.path.exists(final_file_path):
+    print("Arquivo existente encontrado. Carregando dados antigos...")
+    df_old = spark.read.parquet(final_file_path)
+    df_curated = df_old.unionByName(df_curated)
 
-print("Encerrando a sessão spark...")
+# Remove temp anterior
+if os.path.exists(temp_path):
+    shutil.rmtree(temp_path)
+
+print("Salvando dados em 1 único arquivo parquet...")
+df_curated.coalesce(1).write.mode("overwrite").parquet(temp_path)
+
+# Renomeia o arquivo part-*.parquet para report_2.parquet
+part_file = glob.glob(os.path.join(temp_path, "part-*.parquet"))[0]
+if os.path.exists(final_file_path):
+    os.remove(final_file_path)
+shutil.move(part_file, final_file_path)
+
+# Remove diretório temporário
+shutil.rmtree(temp_path)
+
+print(f"✔️ Dados salvos com sucesso em: {final_file_path}")
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"⏱️ Tempo total de execução: {elapsed_time:.2f} segundos")
+
 spark.stop()
 print("===============================================")
-
