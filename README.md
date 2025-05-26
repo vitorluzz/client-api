@@ -38,8 +38,8 @@ Para executar o projeto, certifique-se de ter instalado:
 **1** - Clone o repositório:
 
 ```bash
-git clone https://github.com/seu-usuario/seu-projeto.git
-cd seu-projeto
+git clone https://github.com/vitorluzz/client-api.git
+cd client-api
 ```
 
 ---
