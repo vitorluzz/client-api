@@ -21,6 +21,7 @@ Este projeto em Python realiza um processo completo de ETL (Extração, Transfor
 - 📦 Armazenamento em formato Parquet com controle de versão e consolidação.
 - 🧪 Preparação da zona curated para consumo posterior (por dashboards, notebooks etc.).
 - 🧠 Utilização de PySpark para processamento em larga escala.
+- 📊 **Data Observability:** monitoração contínua da qualidade, frescor, completude e consistência dos dados ao longo do pipeline, permitindo detecção proativa de anomalias e garantindo confiança nos dados utilizados para análise e tomada de decisão.
 
 ## ⚙️ Requisitos
 
@@ -91,10 +92,9 @@ source ~/.bashrc
 
 ---
 
-**5** - Execute os scripts:
+**5** - Execute o script main:
 
 ```bash
-python step01_github_request.py
-python step02_zona_curated.py
+python main.py
 ```
 
