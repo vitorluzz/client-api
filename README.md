@@ -12,7 +12,7 @@
 
 ```
 
-Este projeto em Python realiza um processo completo de ETL (Extração, Transformação e Carga) utilizando dados públicos da API do GitHub sobre repositórios de empresas de tecnologia. Ele foi desenvolvido com foco em coleta, padronização e consolidação de dados para análises futuras.
+Este projeto em Python, baseado em engenharia de dados, realiza um processo completo de ETL (Extração, Transformação e Carga) utilizando dados públicos da API do GitHub sobre repositórios de empresas de tecnologia. Ele foi desenvolvido com foco em coleta, padronização e consolidação de dados para análises futuras.
 
 ## ✨ Funcionalidades
 
